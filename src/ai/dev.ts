@@ -1,1 +1,7 @@
-// Flows will be imported for their side effects in this file.
+import { config } from 'dotenv';
+config();
+
+import '@/ai/flows/verify-new-answer.ts';
+import '@/ai/flows/predict-missing-answers.ts';
+import '@/ai/flows/categorize-questions.ts';
+import '@/ai/flows/verify-answers.ts';
