@@ -16,9 +16,9 @@ import { Logo } from '@/components/icons/logo';
 import {
   FileText,
   FlaskConical,
-  Grid,
+  LayoutGrid,
   Home,
-  FileUp,
+  Upload,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Separator } from '../ui/separator';
@@ -26,8 +26,8 @@ import { Separator } from '../ui/separator';
 const menuItems = [
   { href: '/', label: 'Holding Pen', icon: Home },
   { href: '/test/generate', label: 'Generate Test', icon: FlaskConical },
-  { href: '/questions', label: 'All Questions', icon: Grid },
-  { href: '/documents', label: 'Documents', icon: FileUp },
+  { href: '/questions', label: 'All Questions', icon: LayoutGrid },
+  { href: '/documents', label: 'Documents', icon: Upload },
 ];
 
 export function AppSidebar() {
@@ -51,8 +51,10 @@ export function AppSidebar() {
                   isActive={pathname === item.href}
                   tooltip={item.label}
                 >
-                  <item.icon />
-                  <span>{item.label}</span>
+                  <a>
+                    <item.icon />
+                    <span>{item.label}</span>
+                  </a>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>

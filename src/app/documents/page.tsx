@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { FileUp, AlertCircle } from "lucide-react";
+import { Upload, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function DocumentsPage() {
@@ -36,7 +36,7 @@ export default function DocumentsPage() {
                 </CardContent>
                 <CardFooter>
                     <Button className="w-full" disabled>
-                        <FileUp className="mr-2 h-4 w-4" />
+                        <Upload className="mr-2 h-4 w-4" />
                         Upload and Process
                     </Button>
                 </CardFooter>

@@ -77,7 +77,7 @@ export function NewQuestionForm() {
       });
       setAiResponse(result);
       
-      if (!result.flagForReview) {
+      if (result && !result.flagForReview) {
         // In a real app, save to Firestore here
         toast({
           title: 'Question Verified and Added!',
@@ -92,7 +92,7 @@ export function NewQuestionForm() {
          toast({
           title: 'Verification Complete',
           description: 'Review the AI feedback before proceeding.',
-          variant: 'destructive',
+          variant: 'default',
         });
       }
 

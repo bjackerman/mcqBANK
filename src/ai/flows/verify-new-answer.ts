@@ -28,39 +28,37 @@ export async function verifyNewAnswer(input: VerifyNewAnswerInput): Promise<Veri
   return verifyNewAnswerFlow(input);
 }
 
-const verifyAnswerTool = ai.defineTool({
-  name: 'verifyAnswer',
-  description: 'Verifies if the provided answer correctly answers the question.',
-  inputSchema: VerifyNewAnswerInputSchema,
-  outputSchema: z.object({
-    isCorrect: z.boolean().describe('true if the provided answer correctly answers the question, false otherwise'),
-    reasoning: z.string().describe('The explanation of why the answer is correct or incorrect'),
-  }),
+const verifyAnswerTool = ai.defineTool(
+  {
+    name: 'verifyAnswer',
+    description: 'Verifies if the provided answer correctly answers the question.',
+    inputSchema: VerifyNewAnswerInputSchema,
+    outputSchema: z.object({
+      isCorrect: z.boolean().describe('true if the provided answer correctly answers the question, false otherwise'),
+      reasoning: z.string().describe('The explanation of why the answer is correct or incorrect'),
+    }),
+  },
   async (input) => {
     const promptResult = await answerVerificationPrompt(input);
-    return {
-      isCorrect: promptResult.output!.isCorrect,
-      reasoning: promptResult.output!.reasoning,
-    };
-  },
-});
+    return promptResult.output!;
+  }
+);
 
 const answerVerificationPrompt = ai.definePrompt({
   name: 'answerVerificationPrompt',
   input: {schema: VerifyNewAnswerInputSchema},
-  output: {schema: z.object({
-    isCorrect: z.boolean().describe('true if the provided answer correctly answers the question, false otherwise'),
-    reasoning: z.string().describe('The explanation of why the answer is correct or incorrect'),
-  })},
+  output: {
+    schema: z.object({
+      isCorrect: z.boolean().describe('true if the provided answer correctly answers the question, false otherwise'),
+      reasoning: z.string().describe('The explanation of why the answer is correct or incorrect'),
+    }),
+  },
   prompt: `You are an expert fact checker. Given the following question and answer, determine if the answer is correct. Provide a detailed explanation for your reasoning.
 
 Question: {{{question}}}
 Answer: {{{answer}}}
 
-Based on your analysis, determine if the answer is correct and provide your reasoning. Be brief and to the point.
-
-Correct: {{#if isCorrect}}true{{else}}false{{/if}}
-Reasoning: {{{reasoning}}}`,
+Based on your analysis, determine if the answer is correct and provide your reasoning. Be brief and to the point.`,
 });
 
 const verifyNewAnswerFlow = ai.defineFlow(
@@ -69,7 +67,7 @@ const verifyNewAnswerFlow = ai.defineFlow(
     inputSchema: VerifyNewAnswerInputSchema,
     outputSchema: VerifyNewAnswerOutputSchema,
   },
-  async input => {
+  async (input) => {
     const verificationResult = await verifyAnswerTool(input);
     const flagForReview = !verificationResult.isCorrect;
 
