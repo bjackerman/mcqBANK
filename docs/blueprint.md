@@ -2,7 +2,7 @@
 
 ## Core Features:
 
-- Document Ingestion and Parsing: Upload .docx documents, parse questions and options, detect answer key existence, and store data in Firestore.
+- Document Ingestion and Parsing: Upload .docx documents, parse questions and options, detect answer key existence, and store data in MongoDB (with a local JSON fallback for development).
 - AI-Powered Enrichment: Use Gemini Flash via Firebase Genkit to categorize questions, verify provided answers, and predict missing answers.
 - Holding Pen Dashboard: Review questions with missing answers, display AI predictions, and manually correct answers before graduating questions to 'ready' status.
 - Custom Test Generation: Select test categories, number of questions, and difficulty to generate a random test from the database.
