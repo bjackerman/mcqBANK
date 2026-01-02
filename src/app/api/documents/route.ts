@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { extractDocxText, parseDocxTextToQuestions } from "@/lib/docx-parser";
-import { FieldValue, getFirestoreDb } from "@/lib/firebase-admin";
+import { getQuestionStore } from "@/lib/datastore";
 
 export const runtime = "nodejs";
 
@@ -33,16 +33,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const db = getFirestoreDb();
-    const batch = db.batch();
-    const collection = db.collection("questions");
-    const createdAt = FieldValue.serverTimestamp();
-    const ids: string[] = [];
-
-    parsedQuestions.forEach((question) => {
-      const docRef = collection.doc();
-      ids.push(docRef.id);
-      batch.set(docRef, {
+    const store = getQuestionStore();
+    const ids = await store.insertMany(
+      parsedQuestions.map((question) => ({
         questionText: question.questionText,
         options: question.options,
         correctAnswer: question.correctAnswer ?? null,
@@ -50,11 +43,8 @@ export async function POST(request: Request) {
         difficulty: "Medium",
         status: question.correctAnswer ? "ready" : "needs-review",
         source: "docx",
-        createdAt,
-      });
-    });
-
-    await batch.commit();
+      })),
+    );
 
     return NextResponse.json({ count: parsedQuestions.length, ids });
   } catch (error) {
