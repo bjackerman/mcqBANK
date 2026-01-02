@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { extractDocxText, parseDocxTextToQuestions } from "@/lib/docx-parser";
-import { FieldValue, getFirestoreDb } from "@/lib/firebase-admin";
+import { insertQuestions } from "@/lib/datastore/questions";
+import type { NewQuestionInput } from "@/lib/datastore/types";
 
 export const runtime = "nodejs";
 
@@ -33,30 +34,19 @@ export async function POST(request: Request) {
       );
     }
 
-    const db = getFirestoreDb();
-    const batch = db.batch();
-    const collection = db.collection("questions");
-    const createdAt = FieldValue.serverTimestamp();
-    const ids: string[] = [];
+    const inputs: NewQuestionInput[] = parsedQuestions.map((question) => ({
+      questionText: question.questionText,
+      options: question.options,
+      correctAnswer: question.correctAnswer ?? null,
+      category: "Imported",
+      difficulty: "Medium",
+      status: question.correctAnswer ? "ready" : "needs-review",
+      source: "docx",
+    }));
 
-    parsedQuestions.forEach((question) => {
-      const docRef = collection.doc();
-      ids.push(docRef.id);
-      batch.set(docRef, {
-        questionText: question.questionText,
-        options: question.options,
-        correctAnswer: question.correctAnswer ?? null,
-        category: "Imported",
-        difficulty: "Medium",
-        status: question.correctAnswer ? "ready" : "needs-review",
-        source: "docx",
-        createdAt,
-      });
-    });
+    const { count, ids } = await insertQuestions(inputs);
 
-    await batch.commit();
-
-    return NextResponse.json({ count: parsedQuestions.length, ids });
+    return NextResponse.json({ count, ids });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unexpected server error.";
     return NextResponse.json({ error: message }, { status: 500 });
