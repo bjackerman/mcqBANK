@@ -34,8 +34,18 @@ const collectText = (node: unknown, parts: string[]) => {
 
   if (node && typeof node === "object") {
     Object.entries(node).forEach(([key, value]) => {
-      if (key === "t") {
+      if (key === "t" || key === "instrText") {
         collectText(value, parts);
+        return;
+      }
+
+      if (key === "tab") {
+        parts.push(" ");
+        return;
+      }
+
+      if (key === "br" || key === "cr") {
+        parts.push("\n");
         return;
       }
 
@@ -56,10 +66,14 @@ export const extractDocxText = (buffer: Buffer) => {
   const parsed = xmlParser.parse(documentXml);
   const body = parsed?.document?.body;
   const paragraphs = Array.isArray(body?.p) ? body.p : body?.p ? [body.p] : [];
-  const lines = paragraphs
-    .map(extractParagraphText)
-    .map((line) => line.replace(/\s+/g, " ").trim())
-    .filter(Boolean);
+  const lines = paragraphs.flatMap((paragraph) => {
+    const text = extractParagraphText(paragraph);
+    return text
+      .replace(/\r/g, "")
+      .split("\n")
+      .map((line) => line.replace(/[ \t]+/g, " ").trim())
+      .filter(Boolean);
+  });
 
   return lines.join("\n");
 };
