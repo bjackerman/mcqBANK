@@ -7,6 +7,18 @@ export interface ParsedQuestion {
   correctAnswer?: string;
 }
 
+export interface ParseIssue {
+  type: "warning" | "error";
+  message: string;
+  line?: number;
+  questionText?: string;
+}
+
+export interface ParseDiagnostics {
+  questions: ParsedQuestion[];
+  issues: ParseIssue[];
+}
+
 const xmlParser = new XMLParser({
   ignoreAttributes: false,
   removeNSPrefix: true,
@@ -78,24 +90,36 @@ export const extractDocxText = (buffer: Buffer) => {
   return lines.join("\n");
 };
 
-export const parseDocxTextToQuestions = (text: string): ParsedQuestion[] => {
+export const parseDocxTextToQuestionsWithDiagnostics = (text: string): ParseDiagnostics => {
   const lines = text
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
 
   const questions: ParsedQuestion[] = [];
+  const issues: ParseIssue[] = [];
   let current: ParsedQuestion | null = null;
+  let currentLine = 0;
 
   const pushCurrent = () => {
     if (!current) return;
     if (current.options.length >= 2 && current.questionText) {
       questions.push(current);
+      current = null;
+      return;
     }
+
+    issues.push({
+      type: "error",
+      message: "Question has fewer than two options.",
+      line: currentLine || undefined,
+      questionText: current.questionText,
+    });
     current = null;
   };
 
-  lines.forEach((line) => {
+  lines.forEach((line, index) => {
+    const lineNumber = index + 1;
     const questionMatch = line.match(/^(?:Q\s*)?\d+[\).:\-]\s+(.+)$/i);
     const answerMatch = line.match(/^(?:Answer|Correct Answer)\s*[:\-]\s*(.+)$/i);
     const optionMatch = line.match(/^([A-H])\s*[\).:\-]\s*(.+)$/i);
@@ -107,10 +131,18 @@ export const parseDocxTextToQuestions = (text: string): ParsedQuestion[] => {
         questionText: (questionMatch?.[1] ?? line).trim(),
         options: [],
       };
+      currentLine = lineNumber;
       return;
     }
 
     if (!current) {
+      if (optionMatch || answerMatch) {
+        issues.push({
+          type: "warning",
+          message: "Found an option or answer line before any question.",
+          line: lineNumber,
+        });
+      }
       return;
     }
 
@@ -121,7 +153,14 @@ export const parseDocxTextToQuestions = (text: string): ParsedQuestion[] => {
         const index = getOptionIndex(letterMatch[1]);
         if (index >= 0 && current.options[index]) {
           current.correctAnswer = current.options[index];
+          return;
         }
+        issues.push({
+          type: "warning",
+          message: `Answer references option ${letterMatch[1]} but it was not found.`,
+          line: lineNumber,
+          questionText: current.questionText,
+        });
         return;
       }
 
@@ -151,5 +190,17 @@ export const parseDocxTextToQuestions = (text: string): ParsedQuestion[] => {
   });
 
   pushCurrent();
-  return questions;
+
+  if (questions.length === 0) {
+    issues.push({
+      type: "error",
+      message: "No questions were detected in the document.",
+    });
+  }
+
+  return { questions, issues };
+};
+
+export const parseDocxTextToQuestions = (text: string): ParsedQuestion[] => {
+  return parseDocxTextToQuestionsWithDiagnostics(text).questions;
 };
